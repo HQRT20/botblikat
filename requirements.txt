@@ -1,1 +1,7 @@
 
+import os
+import telebot
+import time
+import random
+from telebot import types
+
