@@ -6,10 +6,10 @@ import secrets
 import string
 from telebot import types
 
-TOKEN = os.environ.get("BOT_TOKEN")
+TOKEN = os.environ.get("5765546953:AAG_UdX2moG7ryDHuERp6cXf4yiGGdu58kg")
 bot = telebot.TeleBot(TOKEN)
 
-authorized_user_ids = ["YOUR_TELEGRAM_USER_ID"]
+authorized_user_ids = ["5805203780"]
 
 def generate_random_token():
     alphabet = string.ascii_letters + string.digits
