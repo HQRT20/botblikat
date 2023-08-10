@@ -1,14 +1,13 @@
-python
 import os
 import telebot
 import time
 import random
 from telebot import types
 
-bot_token = "YOUR_BOT_TOKEN"
+bot_token = "6594665064:AAFKNuMQwgO2WgYgDvpF0RgjF4Teo1DMfuA"
 bot = telebot.TeleBot(bot_token)
 
-authorized_user_ids = ["YOUR_TELEGRAM_USER_ID"]
+authorized_user_ids = ["5805203780"]
 active_reports = True
 
 # تعريف الرمز المؤقت والزمن المحدد للاستخدام
