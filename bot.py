@@ -1,30 +1,21 @@
+python
 import os
 import telebot
 import time
 import random
 from telebot import types
 
-bot_token = "6594665064:AAFKNuMQwgO2WgYgDvpF0RgjF4Teo1DMfuA"
-bot = telebot.TeleBot(bot_token)
+TOKEN = os.environ.get("6594665064:AAFKNuMQwgO2WgYgDvpF0RgjF4Teo1DMfuA")
+bot = telebot.TeleBot(TOKEN)
 
-authorized_user_ids = ["5805203780"]
-active_reports = True
+authorized_user_ids = ["@DirtyBand"]
 
-# تعريف الرمز المؤقت والزمن المحدد للاستخدام
-temp_token = None
-token_expiration = None
+def generate_random_token():
+    return ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890', k=10))
 
-@bot.message_handler(commands=['start'])
-def start(message):
-    user_id = message.from_user.id
-    if str(user_id) in authorized_user_ids:
-        markup = types.ReplyKeyboardMarkup(row_width=1)
-        item = types.KeyboardButton("رفع بلاغ")
-        item2 = types.KeyboardButton("توليد رمز")
-        markup.add(item, item2)
-        bot.send_message(message.chat.id, "مرحبًا بك! اضغط على الخيار المناسب.", reply_markup=markup)
-    else:
-        bot.send_message(message.chat.id, "ليس لديك الحق في استخدام هذا البوت.")
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+    bot.reply_to(message, "مرحبًا! يمكنك استخدام أمر /generate لإنشاء رمز مؤقت.")
 
 @bot.message_handler(func=lambda message: message.text == "توليد رمز")
 def generate_token(message):
@@ -52,9 +43,15 @@ def set_token_expiration(message):
         token_expiration = time.time() + (96 * 60 * 60)
     elif message.text == "30 يوم":
         token_expiration = time.time() + (30 * 24 * 60 * 60)
-    
-    bot.send_message(message.chat.id, f"تم تحديد صلاحية الرمز لمدة {message.text}.")
-    
-# تابع باقي الأكواد الموجودة في السورس السابق...
+    bot.send_message(message.chat.id, "تم تعيين مدة صلاحية الرمز بنجاح.")
+
+@bot.message_handler(func=lambda message: message.text == "استخدام البوت")
+def use_bot(message):
+    user_id = message.from_user.id
+    current_time = time.time()
+    if str(user_id) in authorized_user_ids and current_time <= token_expiration:
+        bot.send_message(message.chat.id, "بإمكانك البدء في استخدام البوت الآن.")
+    else:
+        bot.send_message(message.chat.id, "ليس لديك الحق في استخدام البوت في الوقت الحالي.")
 
 bot.polling()
