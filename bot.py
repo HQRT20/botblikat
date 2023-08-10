@@ -1,16 +1,20 @@
+
 import os
 import telebot
 import time
-import random
+import secrets
+import string
 from telebot import types
 
-TOKEN = os.environ.get("6594665064:AAFKNuMQwgO2WgYgDvpF0RgjF4Teo1DMfuA")
+TOKEN = os.environ.get("BOT_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
-authorized_user_ids = ["@DirtyBand"]
+authorized_user_ids = ["YOUR_TELEGRAM_USER_ID"]
 
 def generate_random_token():
-    return ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890', k=10))
+    alphabet = string.ascii_letters + string.digits
+    token = ''.join(secrets.choice(alphabet) for _ in range(7))
+    return token
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
