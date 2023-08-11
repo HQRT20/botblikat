@@ -85,7 +85,7 @@ def get_report_count(client, callback_query):
 remaining_time = user_tokens[user_id] - time.time()
         callback_query.message.edit_text("عدد البلاغات المرفوعة: {}\nمدة الصلاحية المتبقية: {} ثواني".format(report_count, int(remaining_time)))
   
-  else:
+      else:
         callback_query.message.edit_text("ليس لديك الحق في استخدام البوت في الوقت الحالي.")
 
 app.run()
