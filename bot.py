@@ -1,60 +1,100 @@
-
 import os
-import telebot
 import time
-import secrets
-import string
-from telebot import types
+import random
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-TOKEN = os.environ.get("5765546953:AAG_UdX2moG7ryDHuERp6cXf4yiGGdu58kg")
-bot = telebot.TeleBot(TOKEN)
+API_ID = "YOUR_API_ID"
+API_HASH = "YOUR_API_HASH"
+BOT_TOKEN = "YOUR_BOT_TOKEN"
+AUTHORIZED_USER_ID = YOUR_USER_ID
 
-authorized_user_ids = ["5805203780"]
+app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
+authorized_user_ids = [AUTHORIZED_USER_ID]
+user_tokens = {}
+user_codes = {}
 
 def generate_random_token():
-    alphabet = string.ascii_letters + string.digits
-    token = ''.join(secrets.choice(alphabet) for _ in range(7))
-    return token
+    return ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890', k=8))
 
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
-    bot.reply_to(message, "مرحبًا! يمكنك استخدام أمر /generate لإنشاء رمز مؤقت.")
-
-@bot.message_handler(func=lambda message: message.text == "توليد رمز")
-def generate_token(message):
+@app.on_message(filters.private & filters.user(AUTHORIZED_USER_ID))
+def start(client, message):
     user_id = message.from_user.id
-    if str(user_id) in authorized_user_ids:
-        global temp_token, token_expiration
-        temp_token = generate_random_token()
-        
-        markup = types.ReplyKeyboardMarkup(row_width=2)
-        item1 = types.KeyboardButton("24 ساعة")
-        item2 = types.KeyboardButton("96 ساعة")
-        item3 = types.KeyboardButton("30 يوم")
-        markup.add(item1, item2, item3)
-        
-        bot.send_message(message.chat.id, f"تم إنشاء رمز مؤقت: {temp_token}\nيرجى اختيار مدة الصلاحية:", reply_markup=markup)
-        bot.register_next_step_handler(message, set_token_expiration)
+    user_username = message.from_user.username
+    if user_id in authorized_user_ids:
+        message.reply_text(f"مرحباً المطور {user_username}!\n\n"
+                           "اختر إحدى الخيارات:",
+                           reply_markup=InlineKeyboardMarkup(
+                               [
+                                   [InlineKeyboardButton("بدء رفع البلاغات", callback_data="report"),
+                                    InlineKeyboardButton("توليد كود للمستخدم", callback_data="generate_code")]
+                               ]
+                           ))
     else:
-        bot.send_message(message.chat.id, "ليس لديك الحق في استخدام هذا البوت.")
+        message.reply_text("ليس لديك الحق في استخدام هذا البوت.")
 
-def set_token_expiration(message):
-    global token_expiration
-    if message.text == "24 ساعة":
-        token_expiration = time.time() + (24 * 60 * 60)
-    elif message.text == "96 ساعة":
-        token_expiration = time.time() + (96 * 60 * 60)
-    elif message.text == "30 يوم":
-        token_expiration = time.time() + (30 * 24 * 60 * 60)
-    bot.send_message(message.chat.id, "تم تعيين مدة صلاحية الرمز بنجاح.")
+@app.on_callback_query(filters.user(AUTHORIZED_USER_ID) & filters.regex("report|generate_code"))
+def callback_query(client, callback_query):
+    user_id = callback_query.from_user.id
+    data = callback_query.data
+    if user_id in authorized_user_ids:
+        if data == "report":
+            global temp_token
+            temp_token = generate_random_token()
+            keyboard = [
+                [InlineKeyboardButton("1 يوم", callback_data="1d"),
+                 InlineKeyboardButton("7 أيام", callback_data="7d"),
+                 InlineKeyboardButton("30 يوم", callback_data="30d")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            callback_query.message.edit_text(f"تم إنشاء رمز مؤقت: {temp_token}\nيرجى اختيار مدة الصلاحية:", reply_markup=reply_markup)
+        elif data == "generate_code":
+            user_code = generate_random_token()
+            user_codes[user_id] = user_code
+            callback_query.message.edit_text(f"تم توليد كود للمستخدم:\n\n{user_code}\n\n"
+                                             "يرجى ارسال هذا الكود للمستخدم لتفعيل استخدام البوت.")
+    else:
+        callback_query.message.edit_text("ليس لديك الحق في استخدام البوت في الوقت الحالي.")
 
-@bot.message_handler(func=lambda message: message.text == "استخدام البوت")
-def use_bot(message):
+@app.on_message(filters.private & ~filters.user(AUTHORIZED_USER_ID))
+def start(client, message):
     user_id = message.from_user.id
-    current_time = time.time()
-    if str(user_id) in authorized_user_ids and current_time <= token_expiration:
-        bot.send_message(message.chat.id, "بإمكانك البدء في استخدام البوت الآن.")
+    user_code = message.text
+    if user_id in user_codes and user_code == user_codes[user_id]:
+        user_tokens[user_id] = time.time() + (24 * 60 * 60)  # قم بتغيير المدة حسب متطلباتك
+        message.reply_text("تم تفعيل استخدام البوت. يمكنك البدء في رفع البلاغات.")
     else:
-        bot.send_message(message.chat.id, "ليس لديك الحق في استخدام البوت في الوقت الحالي.")
+        message.reply_text("ليس لديك الحق في استخدام البوت في الوقت الحالي. يرجى التحقق من الكود والمحاولة مرة أخرى.")
 
-bot.polling()
+@app.on_message(filters.private & ~filters.user(AUTHORIZED_USER_ID))
+def process_user_message(client, message):
+    user_id = message.from_user.id
+    if user_id in user_tokens and time.time() <= user_tokens[user_id]:
+        user_token = user_tokens[user_id]
+        selected_emails = ["stopCA@telegram.org", "abuse@telegram.org"]
+        email_message = f"بريد المستخدم: {message.text}\nموضوع البلاغ: {message.text}\nالرسالة: {message.text}"
+        
+        
+        
+        time.sleep(5)
+        inline_keyboard = [
+            [InlineKeyboardButton("عدد البلاغات", callback_data="get_report_count")]
+        ]
+        reply_markup =InlineKeyboardMarkup(inline_keyboard)
+        message.reply_text("تم رفع البلاغ. انقر على 'عدد البلاغات' لمعرفة عدد البلاغات التي تم رفعها.", reply_markup=reply_markup)
+    else:
+        message.reply_text("ليس لديك الحق في استخدام البوت في الوقت الحالي.")
+
+@app.on_callback_query()
+def get_report_count(client, callback_query):
+    user_id = callback_query.from_user.id
+    if user_id in user_tokens and time.time() <= user_tokens[user_id]:
+        user_token = user_tokens[user_id]
+        report_count = 5  # قم بتغييره إلى القيمة الفعلية
+        remaining_time = user_tokens[user_id] - time.time()
+        callback_query.message.edit_text("عدد البلاغات المرفوعة: {}\nمدة الصلاحية المتبقية: {} ثواني".format(report_count, int(remaining_time)))
+    else:
+        callback_query.message.edit_text("ليس لديك الحق في استخدام البوت في الوقت الحالي.")
+
+app.run() 
