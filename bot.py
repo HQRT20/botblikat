@@ -7,7 +7,7 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 API_ID = "12230620"
 API_HASH = "6a754763979dd2cf139687be3e89901d"
 BOT_TOKEN = "5765546953:AAG_UdX2moG7ryDHuERp6cXf4yiGGdu58kg"
-AUTHORIZED_USER_ID = YOUR_USER_ID
+AUTHORIZED_USER_ID = @DirtyBand
 
 app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
